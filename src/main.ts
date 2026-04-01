@@ -1,8 +1,8 @@
-import { NestFactory }         from '@nestjs/core'
-import { ValidationPipe }      from '@nestjs/common'
-import { ConfigService }       from '@nestjs/config'
-import * as cookieParser       from 'cookie-parser'
-import { AppModule }           from './app.module'
+import { NestFactory } from '@nestjs/core'
+import { ValidationPipe } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import * as cookieParser from 'cookie-parser'
+import { AppModule } from './app.module'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 
 async function bootstrap() {
@@ -12,16 +12,17 @@ async function bootstrap() {
   app.use(cookieParser())
 
   app.enableCors({
-    origin:      config.get('FRONTEND_URL') ?? 'http://localhost:3000',
+    //    origin:      config.get('FRONTEND_URL') ?? 'http://localhost:3000',
+    origin: true,
     credentials: true,
-    methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 
   app.useGlobalPipes(new ValidationPipe({
-    whitelist:            true,
+    whitelist: true,
     forbidNonWhitelisted: true,
-    transform:            true,
+    transform: true,
   }))
 
   app.useGlobalFilters(new HttpExceptionFilter())
