@@ -2,15 +2,15 @@ import {
   Controller, Post, Get, Req, Res, Body,
   UseGuards, HttpCode, HttpStatus,
 } from "@nestjs/common"
-import { AuthGuard }         from "@nestjs/passport"
+import { AuthGuard } from "@nestjs/passport"
 import { Request, Response } from "express"
-import { AuthService }       from "./auth.service"
-import { EmpresasService }   from "../empresas/empresas.service"
-import { JwtAuthGuard }      from "../common/guards/jwt-auth.guard"
-import { CurrentUser }       from "../common/decorators/current-user.decorator"
-import { LoginDto }          from "./dto/login.dto"
+import { AuthService } from "./auth.service"
+import { EmpresasService } from "../empresas/empresas.service"
+import { JwtAuthGuard } from "../common/guards/jwt-auth.guard"
+import { CurrentUser } from "../common/decorators/current-user.decorator"
+import { LoginDto } from "./dto/login.dto"
 import { JwtPayload, AuthUser } from "./dto/auth-response.dto"
-import { ConfigService }     from "@nestjs/config"
+import { ConfigService } from "@nestjs/config"
 import { IsNumber } from "class-validator"
 
 class CambiarEmpresaDto {
@@ -21,10 +21,10 @@ class CambiarEmpresaDto {
 @Controller("auth")
 export class AuthController {
   constructor(
-    private readonly authService:    AuthService,
+    private readonly authService: AuthService,
     private readonly empresasService: EmpresasService,
-    private readonly config:         ConfigService,
-  ) {}
+    private readonly config: ConfigService,
+  ) { }
 
   // ── POST /auth/login ─────────────────────────────────────
   @Post("login")
@@ -42,7 +42,7 @@ export class AuthController {
 
     return {
       success: true,
-      data:    { user, empresas, empresa_activa },
+      data: { user, empresas, empresa_activa },
       mensaje: "Inicio de sesión exitoso",
     }
   }
@@ -79,7 +79,7 @@ export class AuthController {
 
     return {
       success: true,
-      data:    { user, empresas, empresa_activa },
+      data: { user, empresas, empresa_activa },
       mensaje: "Token renovado",
     }
   }
@@ -91,7 +91,7 @@ export class AuthController {
     const { user, empresas, empresa_activa } = await this.authService.perfil(payload.sub)
     return {
       success: true,
-      data:    { user, empresas, empresa_activa },
+      data: { user, empresas, empresa_activa },
     }
   }
 
@@ -121,14 +121,14 @@ export class AuthController {
     const prod = this.isProd()
     res.cookie("access_token", accessToken, {
       httpOnly: true,
-      secure:   prod,
+      secure: prod,
       sameSite: prod ? "strict" : "lax",
-      maxAge:   15 * 60 * 1000,
+      maxAge: 15 * 60 * 1000,
     })
 
     return {
       success: true,
-      data:    { empresa_activa: empresa },
+      data: { empresa_activa: empresa },
       mensaje: "Empresa cambiada correctamente",
     }
   }
@@ -142,14 +142,14 @@ export class AuthController {
     const prod = this.isProd()
     res.cookie("access_token", accessToken, {
       httpOnly: true, secure: prod,
-      sameSite: prod ? "strict" : "lax",
-      maxAge:   15 * 60 * 1000,
+      sameSite: prod ? "none" : "lax",
+      maxAge: 15 * 60 * 1000,
     })
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true, secure: prod,
-      sameSite: prod ? "strict" : "lax",
-      path:     "/auth/refresh",
-      maxAge:   7 * 24 * 60 * 60 * 1000,
+      sameSite: prod ? "none" : "lax",
+      path: "/auth/refresh",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     })
   }
 
