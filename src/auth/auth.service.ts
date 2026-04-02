@@ -25,7 +25,7 @@ export class AuthService {
 
   // ── Validar credenciales (usado por LocalStrategy) ───────
   async validateUser(email: string, password: string): Promise<AuthUser | null> {
-    const user = await this.usersService.findByEmail(email)
+    const user = await this.usersService.findByEmail(email.trim().toLowerCase())
     if (!user) return null
 
     const ok = await bcrypt.compare(password, user.passwordHash)
