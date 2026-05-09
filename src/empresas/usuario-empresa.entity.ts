@@ -2,7 +2,7 @@ import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, ManyToOne, JoinColumn,
 } from "typeorm"
-import { User }    from "../users/user.entity"
+import { User } from "../users/user.entity"
 import { Empresa } from "./empresa.entity"
 
 @Entity("usuario_empresa")
@@ -18,6 +18,9 @@ export class UsuarioEmpresa {
 
   @Column({ default: "operador" })
   rol: string
+
+  @Column({ default: false })
+  esDefault: boolean
 
   @Column({ default: true })
   estatus: boolean

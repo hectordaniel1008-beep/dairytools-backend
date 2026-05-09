@@ -22,9 +22,6 @@ export class User {
   @Column({ name: 'es_superadmin', default: false })
   esSuperadmin: boolean
 
-  @Column({ name: 'empresa_default_id', nullable: true })
-  empresaDefaultId: number
-
   @Column({ default: true })
   estatus: boolean
 

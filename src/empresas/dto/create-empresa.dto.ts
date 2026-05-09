@@ -22,4 +22,9 @@ export class CreateEmpresaDto {
     @IsOptional()
     @IsUrl()
     logoUrl?: string
+
+    @IsString()
+    @Length(0, 13)
+    rfc: string
+
 }

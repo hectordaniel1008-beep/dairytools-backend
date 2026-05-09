@@ -1,6 +1,7 @@
 import {
   Controller, Post, Get, Req, Res, Body,
   UseGuards, HttpCode, HttpStatus,
+  ForbiddenException,
 } from "@nestjs/common"
 import { AuthGuard } from "@nestjs/passport"
 import { Request, Response } from "express"
@@ -35,15 +36,27 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() _dto: LoginDto,
   ) {
-    const { user, empresas, empresa_activa, accessToken, refreshToken }
-      = await this.authService.login(req.user)
+    try {
+      const { user, empresas, empresa_activa, accessToken, refreshToken }
+        = await this.authService.login(req.user)
 
-    this.setCookies(res, accessToken, refreshToken)
+      this.setCookies(res, accessToken, refreshToken)
 
-    return {
-      success: true,
-      data: { user, empresas, empresa_activa },
-      mensaje: "Inicio de sesión exitoso",
+      return {
+        success: true,
+        data: { user, empresas, empresa_activa },
+        mensaje: "Inicio de sesión exitoso",
+      }
+    } catch (error) {
+      // Capturar cualquier error y devolver respuesta consistente
+      const mensaje = error instanceof ForbiddenException
+        ? error.message
+        : 'Credenciales incorrectas'
+
+      return {
+        success: false,
+        mensaje: mensaje,
+      }
     }
   }
 

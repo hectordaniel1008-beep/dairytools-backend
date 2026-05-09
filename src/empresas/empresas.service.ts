@@ -14,6 +14,7 @@ export interface EmpresaConRol {
   color: string
   rol: string
   es_default: boolean   // snake_case para coincidir con el tipo del frontend
+  rfc: string
 }
 
 @Injectable()
@@ -28,7 +29,7 @@ export class EmpresasService {
   // Empresas accesibles por el usuario con su rol
   async getEmpresasDeUsuario(
     usuarioId: number,
-    empresaDefaultId: number | null,
+    _empresaDefaultId: number | null, // Ya no se usa este parámetro
   ): Promise<EmpresaConRol[]> {
     const relaciones = await this.ueRepo.find({
       where: { usuarioId, estatus: true },
@@ -41,9 +42,10 @@ export class EmpresasService {
         id: ue.empresa.id,
         nombre: ue.empresa.nombre,
         clave: ue.empresa.clave,
+        rfc: ue.empresa.rfc,
         color: ue.empresa.color,
         rol: ue.rol,
-        es_default: ue.empresa.id === empresaDefaultId,
+        es_default: ue.esDefault, // Usar el campo de la tabla usuario_empresa
       }))
       .sort((a, b) => {
         if (a.es_default) return -1
@@ -73,11 +75,12 @@ export class EmpresasService {
       color: ue.empresa.color,
       rol: ue.rol,
       es_default: false,
+      rfc: ue.empresa.rfc,
     }
   }
 
   // Todas las empresas (superadmin)
-  async getTodasEmpresas(empresaDefaultId?: number): Promise<EmpresaConRol[]> {
+  async getTodasEmpresas(_empresaDefaultId?: number): Promise<EmpresaConRol[]> {
     const empresas = await this.empresaRepo.find({
       order: { nombre: "ASC" },
     })
@@ -88,13 +91,10 @@ export class EmpresasService {
         clave: e.clave,
         color: e.color,
         rol: "admin",
-        es_default: e.id === empresaDefaultId,
+        es_default: false, // Superadmin no tiene empresa por defecto específica
+        rfc: e.rfc,
       }))
-      .sort((a, b) => {
-        if (a.es_default) return -1
-        if (b.es_default) return 1
-        return a.nombre.localeCompare(b.nombre)
-      })
+      .sort((a, b) => a.nombre.localeCompare(b.nombre))
   }
 
   async getEmpresa(id: number): Promise<Empresa> {

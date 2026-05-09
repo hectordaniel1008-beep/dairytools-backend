@@ -22,4 +22,10 @@ export class UpdateEmpresaDto {
     @IsOptional()
     @IsBoolean()
     estatus?: boolean
+
+    @IsOptional()
+    @IsString()
+    @Length(0, 13)
+    rfc?: string
+
 }

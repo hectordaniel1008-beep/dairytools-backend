@@ -29,4 +29,8 @@ export class Empresa {
 
   @OneToMany(() => UsuarioEmpresa, ue => ue.empresa)
   usuarioEmpresas: UsuarioEmpresa[]
+
+  @Column({ length: 13, nullable: true })
+  rfc: string
+
 }

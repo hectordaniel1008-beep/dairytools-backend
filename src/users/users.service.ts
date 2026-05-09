@@ -9,13 +9,24 @@ import * as bcrypt from 'bcrypt'
 import { User } from './user.entity'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { UsuarioEmpresa } from '../empresas/usuario-empresa.entity'
+import { Empresa } from '../empresas/empresa.entity'
+
+interface AsignarEmpresaDto {
+  empresaId: number
+  esDefault: boolean
+}
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly repo: Repository<User>,
-  ) {}
+    @InjectRepository(UsuarioEmpresa)
+    private readonly usuarioEmpresaRepo: Repository<UsuarioEmpresa>,
+    @InjectRepository(Empresa)
+    private readonly empresaRepo: Repository<Empresa>,
+  ) { }
 
   findByEmail(email: string): Promise<User | null> {
     return this.repo.findOne({
@@ -58,7 +69,33 @@ export class UsersService {
       esSuperadmin: dto.es_superadmin ?? false,
       estatus: dto.estatus ?? true,
     })
-    return this.repo.save(user)
+
+    const savedUser = await this.repo.save(user)
+
+    // Si es superadmin, asignar automáticamente todas las empresas
+    if (savedUser.esSuperadmin) {
+      await this.asignarTodasLasEmpresas(savedUser.id)
+    }
+
+    return savedUser
+  }
+
+  private async asignarTodasLasEmpresas(usuarioId: number): Promise<void> {
+    const empresas = await this.empresaRepo.find({
+      where: { estatus: true }
+    })
+
+    const usuarioEmpresas = empresas.map(empresa =>
+      this.usuarioEmpresaRepo.create({
+        usuarioId,
+        empresaId: empresa.id,
+        rol: 'admin',
+        estatus: true,
+        esDefault: false, // Los superadmin no necesitan empresa por defecto específica
+      })
+    )
+
+    await this.usuarioEmpresaRepo.save(usuarioEmpresas)
   }
 
   async actualizar(id: number, dto: UpdateUserDto): Promise<User> {
@@ -85,7 +122,13 @@ export class UsersService {
       user.passwordHash = await bcrypt.hash(dto.password, 10)
     }
     if (dto.es_superadmin !== undefined) {
+      const eraSuperadmin = user.esSuperadmin
       user.esSuperadmin = dto.es_superadmin
+
+      // Si se convirtió en superadmin, asignar todas las empresas
+      if (!eraSuperadmin && dto.es_superadmin) {
+        await this.asignarTodasLasEmpresas(user.id)
+      }
     }
     if (dto.estatus !== undefined) {
       user.estatus = dto.estatus
@@ -99,5 +142,30 @@ export class UsersService {
     if (!res.affected) {
       throw new NotFoundException('Usuario no encontrado')
     }
+  }
+
+  async obtenerEmpresasUsuario(usuarioId: number): Promise<UsuarioEmpresa[]> {
+    return this.usuarioEmpresaRepo.find({
+      where: { usuarioId },
+      relations: ['empresa'],
+    })
+  }
+
+  async actualizarEmpresasUsuario(usuarioId: number, asignaciones: AsignarEmpresaDto[]): Promise<void> {
+    // Eliminar asignaciones existentes
+    await this.usuarioEmpresaRepo.delete({ usuarioId })
+
+    // Crear nuevas asignaciones
+    const usuarioEmpresas = asignaciones.map(asignacion =>
+      this.usuarioEmpresaRepo.create({
+        usuarioId,
+        empresaId: asignacion.empresaId,
+        rol: 'operador',
+        estatus: true,
+        esDefault: asignacion.esDefault,
+      })
+    )
+
+    await this.usuarioEmpresaRepo.save(usuarioEmpresas)
   }
 }

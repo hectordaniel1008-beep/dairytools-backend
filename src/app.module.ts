@@ -1,27 +1,28 @@
-import { Module }         from '@nestjs/common'
+import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
-import { TypeOrmModule }  from '@nestjs/typeorm'
-import { AuthModule }     from './auth/auth.module'
-import { UsersModule }    from './users/users.module'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { AuthModule } from './auth/auth.module'
+import { UsersModule } from './users/users.module'
 import { EmpresasModule } from './empresas/empresas.module'
+import { ProductsModule } from './leche/products.module'
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
 
     TypeOrmModule.forRootAsync({
-      imports:    [ConfigModule],
-      inject:     [ConfigService],
+      imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const isProduction = config.get('NODE_ENV') === 'production'
 
         return {
-          type:     'postgres',
-          host:     config.get('DB_HOST',  'localhost'),
-          port:     config.get<number>('DB_PORT', 5432),
-          database: config.get('DB_NAME',  'dairytools'),
-          username: config.get('DB_USER',  'postgres'),
-          password: config.get('DB_PASS',  ''),
+          type: 'postgres',
+          host: config.get('DB_HOST', 'localhost'),
+          port: config.get<number>('DB_PORT', 5432),
+          database: config.get('DB_NAME', 'dairytools'),
+          username: config.get('DB_USER', 'postgres'),
+          password: config.get('DB_PASS', ''),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
 
           // En producción NO usar synchronize — riesgo de borrar datos
@@ -40,6 +41,7 @@ import { EmpresasModule } from './empresas/empresas.module'
     AuthModule,
     UsersModule,
     EmpresasModule,
+    ProductsModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

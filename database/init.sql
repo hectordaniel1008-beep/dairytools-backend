@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS empresas (
   id         SERIAL PRIMARY KEY,
   nombre     VARCHAR(150) NOT NULL,
   clave      VARCHAR(20)  NOT NULL UNIQUE,
+  rfc        VARCHAR(13)  ,
+  estatus    BOOLEAN      DEFAULT true,  
   color      VARCHAR(10)  DEFAULT '#1e5a96',
   logo_url   VARCHAR(255),
   estatus    BOOLEAN      DEFAULT true,

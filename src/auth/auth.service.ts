@@ -1,27 +1,27 @@
 import {
-  Injectable, UnauthorizedException,
+  Injectable, UnauthorizedException, ForbiddenException,
 } from "@nestjs/common"
-import { JwtService }      from "@nestjs/jwt"
-import { ConfigService }   from "@nestjs/config"
+import { JwtService } from "@nestjs/jwt"
+import { ConfigService } from "@nestjs/config"
 import { InjectRepository } from "@nestjs/typeorm"
-import { Repository }      from "typeorm"
-import * as bcrypt         from "bcrypt"
-import * as crypto         from "crypto"
-import { UsersService }    from "../users/users.service"
+import { Repository } from "typeorm"
+import * as bcrypt from "bcrypt"
+import * as crypto from "crypto"
+import { UsersService } from "../users/users.service"
 import { EmpresasService, EmpresaConRol } from "../empresas/empresas.service"
-import { RefreshToken }    from "./refresh-token.entity"
+import { RefreshToken } from "./refresh-token.entity"
 import { JwtPayload, AuthUser } from "./dto/auth-response.dto"
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly usersService:   UsersService,
+    private readonly usersService: UsersService,
     private readonly empresasService: EmpresasService,
-    private readonly jwtService:     JwtService,
-    private readonly config:         ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
     @InjectRepository(RefreshToken)
-    private readonly refreshRepo:    Repository<RefreshToken>,
-  ) {}
+    private readonly refreshRepo: Repository<RefreshToken>,
+  ) { }
 
   // ── Validar credenciales (usado por LocalStrategy) ───────
   async validateUser(email: string, password: string): Promise<AuthUser | null> {
@@ -32,11 +32,10 @@ export class AuthService {
     if (!ok) return null
 
     return {
-      id:              user.id,
-      nombre:          user.nombre,
-      email:           user.email,
-      esSuperadmin:    user.esSuperadmin,
-      empresaDefaultId: user.empresaDefaultId,
+      id: user.id,
+      nombre: user.nombre,
+      email: user.email,
+      esSuperadmin: user.esSuperadmin,
     }
   }
 
@@ -45,20 +44,25 @@ export class AuthService {
     await this.usersService.updateUltimoAcceso(user.id)
 
     const empresas = user.esSuperadmin
-      ? await this.empresasService.getTodasEmpresas(user.empresaDefaultId)
-      : await this.empresasService.getEmpresasDeUsuario(user.id, user.empresaDefaultId)
+      ? await this.empresasService.getTodasEmpresas()
+      : await this.empresasService.getEmpresasDeUsuario(user.id, null)
+
+    // Verificar que el usuario tenga al menos una empresa asignada
+    if (!user.esSuperadmin && empresas.length === 0) {
+      throw new ForbiddenException("No tienes empresas asignadas. Contacta al administrador.")
+    }
 
     // Seleccionar la empresa marcada como default, si no la primera
     const empresaActiva = empresas.find(e => e.es_default) ?? empresas[0] ?? null
 
     const payload: JwtPayload = {
-      sub:          user.id,
-      nombre:       user.nombre,
-      email:        user.email,
+      sub: user.id,
+      nombre: user.nombre,
+      email: user.email,
       esSuperadmin: user.esSuperadmin,
     }
 
-    const accessToken  = this.signAccessToken(payload)
+    const accessToken = this.signAccessToken(payload)
     const refreshToken = await this.createRefreshToken(user.id)
 
     return { user, empresas, empresa_activa: empresaActiva, accessToken, refreshToken }
@@ -69,7 +73,7 @@ export class AuthService {
     const hash = this.hashToken(rawRefreshToken)
 
     const stored = await this.refreshRepo.findOne({
-      where:     { token: hash },
+      where: { token: hash },
       relations: ["usuario"],
     })
 
@@ -80,27 +84,31 @@ export class AuthService {
     await this.refreshRepo.delete({ id: stored.id })
 
     const user: AuthUser = {
-      id:               stored.usuario.id,
-      nombre:           stored.usuario.nombre,
-      email:            stored.usuario.email,
-      esSuperadmin:     stored.usuario.esSuperadmin,
-      empresaDefaultId: stored.usuario.empresaDefaultId,
+      id: stored.usuario.id,
+      nombre: stored.usuario.nombre,
+      email: stored.usuario.email,
+      esSuperadmin: stored.usuario.esSuperadmin,
     }
 
     const empresas = user.esSuperadmin
-      ? await this.empresasService.getTodasEmpresas(user.empresaDefaultId)
-      : await this.empresasService.getEmpresasDeUsuario(user.id, user.empresaDefaultId)
+      ? await this.empresasService.getTodasEmpresas()
+      : await this.empresasService.getEmpresasDeUsuario(user.id, null)
+
+    // Verificar que el usuario tenga al menos una empresa asignada
+    if (!user.esSuperadmin && empresas.length === 0) {
+      throw new ForbiddenException("No tienes empresas asignadas. Contacta al administrador.")
+    }
 
     const empresaActiva = empresas.find(e => e.es_default) ?? empresas[0] ?? null
 
     const payload: JwtPayload = {
-      sub:          user.id,
-      nombre:       user.nombre,
-      email:        user.email,
+      sub: user.id,
+      nombre: user.nombre,
+      email: user.email,
       esSuperadmin: user.esSuperadmin,
     }
 
-    const accessToken  = this.signAccessToken(payload)
+    const accessToken = this.signAccessToken(payload)
     const refreshToken = await this.createRefreshToken(user.id)
 
     return { user, empresas, empresa_activa: empresaActiva, accessToken, refreshToken }
@@ -119,16 +127,20 @@ export class AuthService {
     if (!user) throw new UnauthorizedException("Usuario no encontrado")
 
     const authUser: AuthUser = {
-      id:               user.id,
-      nombre:           user.nombre,
-      email:            user.email,
-      esSuperadmin:     user.esSuperadmin,
-      empresaDefaultId: user.empresaDefaultId,
+      id: user.id,
+      nombre: user.nombre,
+      email: user.email,
+      esSuperadmin: user.esSuperadmin,
     }
 
     const empresas = user.esSuperadmin
-      ? await this.empresasService.getTodasEmpresas(user.empresaDefaultId)
-      : await this.empresasService.getEmpresasDeUsuario(user.id, user.empresaDefaultId)
+      ? await this.empresasService.getTodasEmpresas()
+      : await this.empresasService.getEmpresasDeUsuario(user.id, null)
+
+    // Verificar que el usuario tenga al menos una empresa asignada
+    if (!user.esSuperadmin && empresas.length === 0) {
+      throw new ForbiddenException("No tienes empresas asignadas. Contacta al administrador.")
+    }
 
     const empresaActiva = empresas.find(e => e.es_default) ?? empresas[0] ?? null
 
@@ -141,7 +153,7 @@ export class AuthService {
   }
 
   private async createRefreshToken(userId: number): Promise<string> {
-    const raw  = crypto.randomBytes(64).toString("hex")
+    const raw = crypto.randomBytes(64).toString("hex")
     const hash = this.hashToken(raw)
     const dias = parseInt(
       this.config.get("JWT_REFRESH_EXPIRES", "7d").replace("d", "")
@@ -160,9 +172,9 @@ export class AuthService {
   // ── Generar nuevo access token al cambiar empresa ────────
   async generarTokenConEmpresa(payload: JwtPayload, empresa: any) {
     const nuevoPayload: JwtPayload = {
-      sub:          payload.sub,
-      nombre:       payload.nombre,
-      email:        payload.email,
+      sub: payload.sub,
+      nombre: payload.nombre,
+      email: payload.email,
       esSuperadmin: payload.esSuperadmin,
     }
     const accessToken = this.signAccessToken(nuevoPayload)

@@ -20,6 +20,11 @@ import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { User } from './user.entity'
 
+interface AsignarEmpresaDto {
+  empresaId: number
+  esDefault: boolean
+}
+
 function toUsuarioJson(u: User) {
   return {
     id: u.id,
@@ -33,7 +38,7 @@ function toUsuarioJson(u: User) {
 @UseGuards(JwtAuthGuard)
 @Controller('usuarios')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   async listar() {
@@ -89,6 +94,27 @@ export class UsersController {
     return {
       success: true,
       mensaje: 'Usuario eliminado correctamente',
+    }
+  }
+
+  @Get(':id/empresas')
+  async obtenerEmpresas(@Param('id', ParseIntPipe) id: number) {
+    const empresas = await this.usersService.obtenerEmpresasUsuario(id)
+    return {
+      success: true,
+      data: empresas,
+    }
+  }
+
+  @Patch(':id/empresas')
+  async actualizarEmpresas(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() asignaciones: AsignarEmpresaDto[],
+  ) {
+    await this.usersService.actualizarEmpresasUsuario(id, asignaciones)
+    return {
+      success: true,
+      mensaje: 'Empresas asignadas correctamente',
     }
   }
 }
