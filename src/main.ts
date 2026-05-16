@@ -9,11 +9,18 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   const config = app.get(ConfigService)
 
-  app.use(cookieParser())
+  app.use((cookieParser as any)())
 
   app.enableCors({
-    //    origin:      config.get('FRONTEND_URL') ?? 'http://localhost:3000',
-    origin: true,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.some(pattern =>
+        typeof pattern === 'string' ? pattern === origin : pattern.test(origin)
+      )) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -25,6 +32,13 @@ async function bootstrap() {
     transform: true,
   }))
 
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
+  const allowedOrigins = [
+    'http://localhost:5173',     // Desarrollo local
+    'http://localhost:3000',     // Mismo origen
+    /\.trycloudflare\.com$/,     // CUALQUIER subdominio de trycloudflare.com
+  ];
   app.useGlobalFilters(new HttpExceptionFilter())
 
   // Render asigna el puerto via variable de entorno PORT

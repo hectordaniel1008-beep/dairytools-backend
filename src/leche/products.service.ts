@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository, Like } from 'typeorm'
+import { Repository, ILike } from 'typeorm'
 import { Product } from './product.entity'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
@@ -16,9 +16,8 @@ export class ProductsService {
     const skip = (page - 1) * limit
 
     const whereCondition = search ? [
-      { nombre: Like(`%${search}%`), estatus: true },
-      { clave: Like(`%${search}%`), estatus: true },
-      { categoria: Like(`%${search}%`), estatus: true },
+      { nombre: ILike(`%${search}%`), estatus: true },
+      { clave: ILike(`%${search}%`), estatus: true },
     ] : { estatus: true }
 
     const [data, total] = await this.productRepo.findAndCount({
