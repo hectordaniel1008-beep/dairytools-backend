@@ -1,45 +1,31 @@
-import { IsString, IsNumber, IsOptional, IsBoolean, Min, MaxLength } from 'class-validator'
+import { IsInt, IsString, MaxLength } from 'class-validator'
 
 export class CreateProductDto {
   @IsString()
-  @MaxLength(100)
+  @MaxLength(200)
   nombre: string
 
+  @IsInt()
+  tipoProductoId: number
+
+  @IsInt()
+  division: number
+
+  @IsInt()
+  proveedorUltimaCompra: number
+
   @IsString()
   @MaxLength(50)
-  clave: string
+  codigoErp: string
 
   @IsString()
-  @IsOptional()
   @MaxLength(50)
-  categoria?: string
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  precio?: number
+  codigoProveedor: string
 
   @IsString()
-  @IsOptional()
-  @MaxLength(20)
-  unidad?: string
+  @MaxLength(50)
+  codigoAlimentacion: string
 
-  @IsString()
-  @IsOptional()
-  @MaxLength(500)
-  descripcion?: string
-
-  @IsBoolean()
-  @IsOptional()
-  estatus?: boolean
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  stock?: number
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(20)
-  codigoBarras?: string
+  @IsInt()
+  unidadMedidaId: number
 }

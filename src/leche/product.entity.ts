@@ -1,43 +1,41 @@
-import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-} from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { TipoProducto } from './tipo-producto.entity'
+import { UnidadMedida } from './unidad-medida.entity'
 
 @Entity('productos')
 export class Product {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column({ length: 100 })
+  @Column({ length: 200, nullable: true })
   nombre: string
 
-  @Column({ length: 50, unique: true })
-  clave: string
+  @Column({ name: 'tipo_producto_id', type: 'int', nullable: true })
+  tipoProductoId: number
 
-  @Column({ length: 50, nullable: true })
-  categoria: string
+  @ManyToOne(() => TipoProducto, { nullable: true })
+  @JoinColumn({ name: 'tipo_producto_id' })
+  tipoProducto: TipoProducto
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  precio: number
+  @Column({ type: 'int', nullable: true })
+  division: number
 
-  @Column({ length: 20, nullable: true })
-  unidad: string
+  @Column({ name: 'proveedor_ultima_compra', type: 'int', nullable: true })
+  proveedorUltimaCompra: number
 
-  @Column({ length: 500, nullable: true })
-  descripcion: string
+  @Column({ name: 'codigo_erp', length: 50, nullable: true })
+  codigoErp: string
 
-  @Column({ default: true })
-  estatus: boolean
+  @Column({ name: 'codigo_proveedor', length: 50, nullable: true })
+  codigoProveedor: string
 
-  @Column({ type: 'decimal', precision: 8, scale: 2, nullable: true })
-  stock: number
+  @Column({ name: 'codigo_alimentacion', length: 50, nullable: true })
+  codigoAlimentacion: string
 
-  @Column({ length: 20, nullable: true })
-  codigoBarras: string
+  @Column({ name: 'unidad_medida_id', type: 'int', nullable: true })
+  unidadMedidaId: number
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date
+  @ManyToOne(() => UnidadMedida, { nullable: true })
+  @JoinColumn({ name: 'unidad_medida_id' })
+  unidadMedida: UnidadMedida
 }

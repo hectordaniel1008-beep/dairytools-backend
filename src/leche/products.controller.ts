@@ -45,6 +45,15 @@ export class ProductsController {
     }
   }
 
+  @Get('catalogos')
+  async getCatalogos() {
+    const catalogos = await this.productsService.getCatalogos()
+    return {
+      success: true,
+      data: catalogos
+    }
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const product = await this.productsService.findOne(parseInt(id))
@@ -80,15 +89,6 @@ export class ProductsController {
     return {
       success: true,
       mensaje: 'Producto eliminado exitosamente'
-    }
-  }
-
-  @Get('clave/next')
-  async getNextClave() {
-    const clave = await this.productsService.generarClave()
-    return {
-      success: true,
-      data: { clave }
     }
   }
 }

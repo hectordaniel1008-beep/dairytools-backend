@@ -1,47 +1,39 @@
-import { IsString, IsNumber, IsOptional, IsBoolean, Min, MaxLength } from 'class-validator'
+import { IsInt, IsOptional, IsString, MaxLength } from 'class-validator'
 
 export class UpdateProductDto {
-    @IsString()
-    @IsOptional()
-    @MaxLength(100)
-    nombre?: string
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  nombre?: string
 
-    @IsString()
-    @IsOptional()
-    @MaxLength(50)
-    clave?: string
+  @IsInt()
+  @IsOptional()
+  tipoProductoId?: number
 
-    @IsString()
-    @IsOptional()
-    @MaxLength(50)
-    categoria?: string
+  @IsInt()
+  @IsOptional()
+  division?: number
 
-    @IsNumber()
-    @IsOptional()
-    @Min(0)
-    precio?: number
+  @IsInt()
+  @IsOptional()
+  proveedorUltimaCompra?: number
 
-    @IsString()
-    @IsOptional()
-    @MaxLength(20)
-    unidad?: string
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  codigoErp?: string
 
-    @IsString()
-    @IsOptional()
-    @MaxLength(500)
-    descripcion?: string
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  codigoProveedor?: string
 
-    @IsBoolean()
-    @IsOptional()
-    estatus?: boolean
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  codigoAlimentacion?: string
 
-    @IsNumber()
-    @IsOptional()
-    @Min(0)
-    stock?: number
-
-    @IsString()
-    @IsOptional()
-    @MaxLength(20)
-    codigoBarras?: string
+  @IsInt()
+  @IsOptional()
+  unidadMedidaId?: number
 }
