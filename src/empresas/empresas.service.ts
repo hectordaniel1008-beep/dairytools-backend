@@ -80,21 +80,30 @@ export class EmpresasService {
   }
 
   // Todas las empresas (superadmin)
-  async getTodasEmpresas(_empresaDefaultId?: number): Promise<EmpresaConRol[]> {
+  async getTodasEmpresas(usuarioId?: number): Promise<EmpresaConRol[]> {
     const empresas = await this.empresaRepo.find({
       order: { nombre: "ASC" },
     })
+
+    const relaciones = usuarioId
+      ? await this.ueRepo.find({ where: { usuarioId, estatus: true } })
+      : []
+
     return empresas
       .map(e => ({
         id: e.id,
         nombre: e.nombre,
         clave: e.clave,
         color: e.color,
-        rol: "admin",
-        es_default: false, // Superadmin no tiene empresa por defecto específica
+        rol: relaciones.find(ue => ue.empresaId === e.id)?.rol ?? "admin",
+        es_default: relaciones.some(ue => ue.empresaId === e.id && ue.esDefault),
         rfc: e.rfc,
       }))
-      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+      .sort((a, b) => {
+        if (a.es_default) return -1
+        if (b.es_default) return 1
+        return a.nombre.localeCompare(b.nombre)
+      })
   }
 
   async getEmpresa(id: number): Promise<Empresa> {

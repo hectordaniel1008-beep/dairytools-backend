@@ -86,7 +86,7 @@ export class AuthController {
       return
     }
     const { user, empresas, empresa_activa, accessToken, refreshToken }
-      = await this.authService.refresh(rawToken)
+      = await this.authService.refresh(rawToken, req.cookies?.access_token)
 
     this.setCookies(res, accessToken, refreshToken)
 
@@ -100,8 +100,16 @@ export class AuthController {
   // ── GET /auth/perfil ─────────────────────────────────────
   @Get("perfil")
   @UseGuards(JwtAuthGuard)
-  async perfil(@CurrentUser() payload: JwtPayload) {
-    const { user, empresas, empresa_activa } = await this.authService.perfil(payload.sub)
+  async perfil(
+    @CurrentUser() payload: JwtPayload,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { user, empresas, empresa_activa } = await this.authService.perfil(payload.sub, payload.empresaId)
+    if (empresa_activa) {
+      const { accessToken } = await this.authService.generarTokenConEmpresa(payload, empresa_activa)
+      this.setAccessCookie(res, accessToken)
+    }
+
     return {
       success: true,
       data: { user, empresas, empresa_activa },
@@ -131,13 +139,7 @@ export class AuthController {
     )
 
     // Solo renovar el access token, el refresh se mantiene
-    const prod = this.isProd()
-    res.cookie("access_token", accessToken, {
-      httpOnly: true,
-      secure: prod,
-      sameSite: prod ? "strict" : "lax",
-      maxAge: 15 * 60 * 1000,
-    })
+    this.setAccessCookie(res, accessToken)
 
     return {
       success: true,
@@ -152,17 +154,22 @@ export class AuthController {
   }
 
   private setCookies(res: Response, accessToken: string, refreshToken: string) {
+    this.setAccessCookie(res, accessToken)
     const prod = this.isProd()
-    res.cookie("access_token", accessToken, {
-      httpOnly: true, secure: prod,
-      sameSite: prod ? "none" : "lax",
-      maxAge: 15 * 60 * 1000,
-    })
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true, secure: prod,
       sameSite: prod ? "none" : "lax",
       path: "/auth/refresh",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+  }
+
+  private setAccessCookie(res: Response, accessToken: string) {
+    const prod = this.isProd()
+    res.cookie("access_token", accessToken, {
+      httpOnly: true, secure: prod,
+      sameSite: prod ? "none" : "lax",
+      maxAge: 15 * 60 * 1000,
     })
   }
 

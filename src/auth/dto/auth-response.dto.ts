@@ -3,6 +3,7 @@ export interface JwtPayload {
   nombre: string
   email: string
   esSuperadmin: boolean
+  empresaId?: number
   iat?: number
   exp?: number
 }

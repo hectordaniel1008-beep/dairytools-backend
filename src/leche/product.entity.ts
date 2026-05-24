@@ -7,6 +7,9 @@ export class Product {
   @PrimaryGeneratedColumn()
   id: number
 
+  @Column({ name: 'empresa_id', type: 'int', default: 1 })
+  empresaId: number
+
   @Column({ length: 200, nullable: true })
   nombre: string
 

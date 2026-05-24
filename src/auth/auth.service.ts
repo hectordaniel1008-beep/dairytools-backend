@@ -44,7 +44,7 @@ export class AuthService {
     await this.usersService.updateUltimoAcceso(user.id)
 
     const empresas = user.esSuperadmin
-      ? await this.empresasService.getTodasEmpresas()
+      ? await this.empresasService.getTodasEmpresas(user.id)
       : await this.empresasService.getEmpresasDeUsuario(user.id, null)
 
     // Verificar que el usuario tenga al menos una empresa asignada
@@ -60,6 +60,7 @@ export class AuthService {
       nombre: user.nombre,
       email: user.email,
       esSuperadmin: user.esSuperadmin,
+      empresaId: empresaActiva?.id,
     }
 
     const accessToken = this.signAccessToken(payload)
@@ -69,7 +70,7 @@ export class AuthService {
   }
 
   // ── Renovar access token ─────────────────────────────────
-  async refresh(rawRefreshToken: string) {
+  async refresh(rawRefreshToken: string, rawAccessToken?: string) {
     const hash = this.hashToken(rawRefreshToken)
 
     const stored = await this.refreshRepo.findOne({
@@ -91,7 +92,7 @@ export class AuthService {
     }
 
     const empresas = user.esSuperadmin
-      ? await this.empresasService.getTodasEmpresas()
+      ? await this.empresasService.getTodasEmpresas(user.id)
       : await this.empresasService.getEmpresasDeUsuario(user.id, null)
 
     // Verificar que el usuario tenga al menos una empresa asignada
@@ -99,13 +100,18 @@ export class AuthService {
       throw new ForbiddenException("No tienes empresas asignadas. Contacta al administrador.")
     }
 
-    const empresaActiva = empresas.find(e => e.es_default) ?? empresas[0] ?? null
+    const requestedEmpresaId = this.getEmpresaIdFromToken(rawAccessToken)
+    const empresaActiva = empresas.find(e => e.id === requestedEmpresaId)
+      ?? empresas.find(e => e.es_default)
+      ?? empresas[0]
+      ?? null
 
     const payload: JwtPayload = {
       sub: user.id,
       nombre: user.nombre,
       email: user.email,
       esSuperadmin: user.esSuperadmin,
+      empresaId: empresaActiva?.id,
     }
 
     const accessToken = this.signAccessToken(payload)
@@ -122,7 +128,7 @@ export class AuthService {
   }
 
   // ── Perfil: user + empresas ──────────────────────────────
-  async perfil(userId: number) {
+  async perfil(userId: number, empresaId?: number) {
     const user = await this.usersService.findById(userId)
     if (!user) throw new UnauthorizedException("Usuario no encontrado")
 
@@ -134,7 +140,7 @@ export class AuthService {
     }
 
     const empresas = user.esSuperadmin
-      ? await this.empresasService.getTodasEmpresas()
+      ? await this.empresasService.getTodasEmpresas(user.id)
       : await this.empresasService.getEmpresasDeUsuario(user.id, null)
 
     // Verificar que el usuario tenga al menos una empresa asignada
@@ -142,7 +148,10 @@ export class AuthService {
       throw new ForbiddenException("No tienes empresas asignadas. Contacta al administrador.")
     }
 
-    const empresaActiva = empresas.find(e => e.es_default) ?? empresas[0] ?? null
+    const empresaActiva = empresas.find(e => e.id === empresaId)
+      ?? empresas.find(e => e.es_default)
+      ?? empresas[0]
+      ?? null
 
     return { user: authUser, empresas, empresa_activa: empresaActiva }
   }
@@ -169,6 +178,13 @@ export class AuthService {
     return crypto.createHash("sha256").update(token).digest("hex")
   }
 
+  private getEmpresaIdFromToken(token?: string): number | undefined {
+    if (!token) return undefined
+
+    const payload = this.jwtService.decode(token) as JwtPayload | null
+    return payload?.empresaId
+  }
+
   // ── Generar nuevo access token al cambiar empresa ────────
   async generarTokenConEmpresa(payload: JwtPayload, empresa: any) {
     const nuevoPayload: JwtPayload = {
@@ -176,6 +192,7 @@ export class AuthService {
       nombre: payload.nombre,
       email: payload.email,
       esSuperadmin: payload.esSuperadmin,
+      empresaId: empresa.id,
     }
     const accessToken = this.signAccessToken(nuevoPayload)
     return { accessToken }

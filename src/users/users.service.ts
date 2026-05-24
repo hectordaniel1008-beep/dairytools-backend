@@ -155,14 +155,17 @@ export class UsersService {
     // Eliminar asignaciones existentes
     await this.usuarioEmpresaRepo.delete({ usuarioId })
 
+    const defaultIndex = asignaciones.findIndex(asignacion => asignacion.esDefault)
+    const normalizedDefaultIndex = defaultIndex >= 0 ? defaultIndex : 0
+
     // Crear nuevas asignaciones
-    const usuarioEmpresas = asignaciones.map(asignacion =>
+    const usuarioEmpresas = asignaciones.map((asignacion, index) =>
       this.usuarioEmpresaRepo.create({
         usuarioId,
         empresaId: asignacion.empresaId,
         rol: 'operador',
         estatus: true,
-        esDefault: asignacion.esDefault,
+        esDefault: index === normalizedDefaultIndex,
       })
     )
 

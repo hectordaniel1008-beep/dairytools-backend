@@ -19,7 +19,7 @@ export class UsuarioEmpresa {
   @Column({ default: "operador" })
   rol: string
 
-  @Column({ default: false })
+  @Column({ name: "es_default", default: false })
   esDefault: boolean
 
   @Column({ default: true })
