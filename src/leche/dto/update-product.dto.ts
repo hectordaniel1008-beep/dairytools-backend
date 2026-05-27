@@ -12,11 +12,12 @@ export class UpdateProductDto {
 
   @IsInt()
   @IsOptional()
-  division?: number
+  proveedorId?: number
 
-  @IsInt()
+  @IsString()
   @IsOptional()
-  proveedorUltimaCompra?: number
+  @MaxLength(100)
+  proveedorUltimaCompra?: string
 
   @IsString()
   @IsOptional()

@@ -121,8 +121,9 @@ CREATE TABLE IF NOT EXISTS productos (
   empresa_id              INT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
   nombre                  VARCHAR(200),
   tipo_producto_id         INT REFERENCES tipos_producto(id) ON DELETE SET NULL,
-  division                INT,
-  proveedor_ultima_compra  INT,
+  division                INT DEFAULT 1,
+  proveedor_id             INT REFERENCES proveedores(id) ON DELETE SET NULL,
+  proveedor_ultima_compra  VARCHAR(100),
   codigo_erp              VARCHAR(50),
   codigo_proveedor        VARCHAR(50),
   codigo_alimentacion     VARCHAR(50),
@@ -134,6 +135,10 @@ ALTER TABLE tipos_producto ADD COLUMN IF NOT EXISTS empresa_id INT;
 ALTER TABLE unidades_medida ADD COLUMN IF NOT EXISTS empresa_id INT;
 ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS empresa_id INT;
 ALTER TABLE productos ADD COLUMN IF NOT EXISTS empresa_id INT;
+ALTER TABLE productos ADD COLUMN IF NOT EXISTS proveedor_id INT;
+ALTER TABLE productos ALTER COLUMN division SET DEFAULT 1;
+ALTER TABLE productos ALTER COLUMN proveedor_ultima_compra TYPE VARCHAR(100)
+  USING proveedor_ultima_compra::VARCHAR(100);
 
 UPDATE tipos_producto SET empresa_id = 1 WHERE empresa_id IS NULL;
 UPDATE unidades_medida SET empresa_id = 1 WHERE empresa_id IS NULL;
@@ -166,6 +171,11 @@ BEGIN
     ALTER TABLE productos
       ADD CONSTRAINT fk_productos_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE;
   END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_productos_proveedor') THEN
+    ALTER TABLE productos
+      ADD CONSTRAINT fk_productos_proveedor FOREIGN KEY (proveedor_id) REFERENCES proveedores(id) ON DELETE SET NULL;
+  END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_tipos_producto_empresa ON tipos_producto (empresa_id);
@@ -173,6 +183,47 @@ CREATE INDEX IF NOT EXISTS idx_unidades_medida_empresa ON unidades_medida (empre
 CREATE INDEX IF NOT EXISTS idx_proveedores_empresa ON proveedores (empresa_id);
 CREATE INDEX IF NOT EXISTS idx_productos_empresa ON productos (empresa_id);
 CREATE INDEX IF NOT EXISTS idx_productos_empresa_nombre ON productos (empresa_id, nombre);
+CREATE INDEX IF NOT EXISTS idx_productos_proveedor ON productos (proveedor_id);
+
+-- ── Catálogos generales por empresa ─────────────────────────
+CREATE TABLE IF NOT EXISTS establos (
+  id          SERIAL PRIMARY KEY,
+  empresa_id  INT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+  descripcion VARCHAR(200) NOT NULL,
+  numero      VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS dietas (
+  id          SERIAL PRIMARY KEY,
+  empresa_id  INT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+  descripcion VARCHAR(200) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS almacenes (
+  id          SERIAL PRIMARY KEY,
+  empresa_id  INT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+  descripcion VARCHAR(200) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tipos_salida_leche (
+  id          SERIAL PRIMARY KEY,
+  empresa_id  INT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+  descripcion VARCHAR(200) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS corrales (
+  id          SERIAL PRIMARY KEY,
+  empresa_id  INT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+  descripcion VARCHAR(200) NOT NULL,
+  establo_id  INT NOT NULL REFERENCES establos(id) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_establos_empresa ON establos (empresa_id);
+CREATE INDEX IF NOT EXISTS idx_dietas_empresa ON dietas (empresa_id);
+CREATE INDEX IF NOT EXISTS idx_almacenes_empresa ON almacenes (empresa_id);
+CREATE INDEX IF NOT EXISTS idx_tipos_salida_leche_empresa ON tipos_salida_leche (empresa_id);
+CREATE INDEX IF NOT EXISTS idx_corrales_empresa ON corrales (empresa_id);
+CREATE INDEX IF NOT EXISTS idx_corrales_establo ON corrales (establo_id);
 
 -- ── Refresh Tokens ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS refresh_tokens (

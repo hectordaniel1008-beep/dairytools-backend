@@ -30,6 +30,7 @@ export class ProductsService {
       .createQueryBuilder('producto')
       .leftJoinAndSelect('producto.tipoProducto', 'tipoProducto')
       .leftJoinAndSelect('producto.unidadMedida', 'unidadMedida')
+      .leftJoinAndSelect('producto.proveedor', 'proveedor')
       .where('producto.empresa_id = :empresaId', { empresaId })
       .orderBy('producto.nombre', 'ASC')
       .skip((safePage - 1) * safeLimit)
@@ -41,7 +42,9 @@ export class ProductsService {
         `(producto.nombre ILIKE :term
         OR producto.codigo_erp ILIKE :term
         OR producto.codigo_proveedor ILIKE :term
-        OR producto.codigo_alimentacion ILIKE :term)`,
+        OR producto.codigo_alimentacion ILIKE :term
+        OR producto.proveedor_ultima_compra ILIKE :term
+        OR proveedor.descripcion ILIKE :term)`,
         { term },
       )
     }
@@ -53,7 +56,7 @@ export class ProductsService {
   async findOne(empresaId: number, id: number): Promise<Product> {
     const product = await this.productRepo.findOne({
       where: { id, empresaId },
-      relations: { tipoProducto: true, unidadMedida: true },
+      relations: { tipoProducto: true, unidadMedida: true, proveedor: true },
     })
 
     if (!product) {
@@ -176,9 +179,18 @@ export class ProductsService {
   }
 
   async create(empresaId: number, createProductDto: CreateProductDto): Promise<Product> {
-    await this.validarCatalogos(empresaId, createProductDto.tipoProductoId, createProductDto.unidadMedidaId)
+    await this.validarCatalogos(
+      empresaId,
+      createProductDto.tipoProductoId,
+      createProductDto.unidadMedidaId,
+      createProductDto.proveedorId,
+    )
 
-    const product = this.productRepo.create({ ...this.normalizePayload(createProductDto), empresaId })
+    const product = this.productRepo.create({
+      ...this.normalizePayload(createProductDto),
+      empresaId,
+      division: 1,
+    })
     const saved = await this.productRepo.save(product)
     return this.findOne(empresaId, saved.id)
   }
@@ -193,9 +205,10 @@ export class ProductsService {
       empresaId,
       updateProductDto.tipoProductoId ?? product.tipoProductoId,
       updateProductDto.unidadMedidaId ?? product.unidadMedidaId,
+      updateProductDto.proveedorId ?? product.proveedorId,
     )
 
-    Object.assign(product, this.normalizePayload(updateProductDto))
+    Object.assign(product, this.normalizePayload(updateProductDto), { division: 1 })
     await this.productRepo.save(product)
     return this.findOne(empresaId, id)
   }
@@ -227,7 +240,7 @@ export class ProductsService {
       { descripcion: 'Pieza', empresaId },
     ])
 
-    await this.proveedorRepo.save([
+    const proveedores = await this.proveedorRepo.save([
       { descripcion: 'Lácteos del Norte', rfc: 'LNT850101ABC', empresaId },
       { descripcion: 'AgroSuministros', rfc: 'AGR920202DEF', empresaId },
       { descripcion: 'Distribuidora Lechera', rfc: 'DLE770303GHI', empresaId },
@@ -239,7 +252,8 @@ export class ProductsService {
         empresaId,
         tipoProductoId: tiposProducto[2].id,
         division: 1,
-        proveedorUltimaCompra: 1001,
+        proveedorId: proveedores[0].id,
+        proveedorUltimaCompra: 'OC-1001',
         codigoErp: 'ERP-LEC-001',
         codigoProveedor: 'PROV-LEC-001',
         codigoAlimentacion: 'ALIM-LEC-001',
@@ -249,8 +263,9 @@ export class ProductsService {
         nombre: 'Alimento concentrado 18%',
         empresaId,
         tipoProductoId: tiposProducto[1].id,
-        division: 2,
-        proveedorUltimaCompra: 2001,
+        division: 1,
+        proveedorId: proveedores[1].id,
+        proveedorUltimaCompra: 'OC-2001',
         codigoErp: 'ERP-ALI-018',
         codigoProveedor: 'PROV-ALI-018',
         codigoAlimentacion: 'ALIM-CON-018',
@@ -261,7 +276,8 @@ export class ProductsService {
         empresaId,
         tipoProductoId: tiposProducto[2].id,
         division: 1,
-        proveedorUltimaCompra: 1002,
+        proveedorId: proveedores[2].id,
+        proveedorUltimaCompra: 'OC-1002',
         codigoErp: 'ERP-QUE-001',
         codigoProveedor: 'PROV-QUE-001',
         codigoAlimentacion: 'ALIM-QUE-001',
@@ -271,8 +287,9 @@ export class ProductsService {
         nombre: 'Cultivo lactico',
         empresaId,
         tipoProductoId: tiposProducto[0].id,
-        division: 3,
-        proveedorUltimaCompra: 3001,
+        division: 1,
+        proveedorId: proveedores[1].id,
+        proveedorUltimaCompra: 'OC-3001',
         codigoErp: 'ERP-CUL-001',
         codigoProveedor: 'PROV-CUL-001',
         codigoAlimentacion: 'ALIM-CUL-001',
@@ -283,7 +300,8 @@ export class ProductsService {
         empresaId,
         tipoProductoId: tiposProducto[2].id,
         division: 1,
-        proveedorUltimaCompra: 1003,
+        proveedorId: proveedores[0].id,
+        proveedorUltimaCompra: 'OC-1003',
         codigoErp: 'ERP-YOG-001',
         codigoProveedor: 'PROV-YOG-001',
         codigoAlimentacion: 'ALIM-YOG-001',
@@ -292,10 +310,11 @@ export class ProductsService {
     ])
   }
 
-  private async validarCatalogos(empresaId: number, tipoProductoId: number, unidadMedidaId: number) {
-    const [tipoProducto, unidadMedida] = await Promise.all([
+  private async validarCatalogos(empresaId: number, tipoProductoId: number, unidadMedidaId: number, proveedorId: number) {
+    const [tipoProducto, unidadMedida, proveedor] = await Promise.all([
       this.tipoProductoRepo.findOne({ where: { id: tipoProductoId, empresaId } }),
       this.unidadMedidaRepo.findOne({ where: { id: unidadMedidaId, empresaId } }),
+      this.proveedorRepo.findOne({ where: { id: proveedorId, empresaId } }),
     ])
 
     if (!tipoProducto) {
@@ -305,12 +324,17 @@ export class ProductsService {
     if (!unidadMedida) {
       throw new NotFoundException('Unidad de medida no encontrada')
     }
+
+    if (!proveedor) {
+      throw new NotFoundException('Proveedor no encontrado')
+    }
   }
 
   private normalizePayload<T extends CreateProductDto | UpdateProductDto>(payload: T): T {
     return {
       ...payload,
       nombre: payload.nombre?.trim(),
+      proveedorUltimaCompra: payload.proveedorUltimaCompra?.trim(),
       codigoErp: payload.codigoErp?.trim(),
       codigoProveedor: payload.codigoProveedor?.trim(),
       codigoAlimentacion: payload.codigoAlimentacion?.trim(),

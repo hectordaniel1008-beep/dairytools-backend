@@ -9,10 +9,11 @@ export class CreateProductDto {
   tipoProductoId: number
 
   @IsInt()
-  division: number
+  proveedorId: number
 
-  @IsInt()
-  proveedorUltimaCompra: number
+  @IsString()
+  @MaxLength(100)
+  proveedorUltimaCompra: string
 
   @IsString()
   @MaxLength(50)
