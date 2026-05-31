@@ -12,6 +12,7 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:5173',     // Desarrollo local
     'http://localhost:3000',     // Mismo origen
+    'https://dairytools.netlify.app',
     /\.trycloudflare\.com$/,     // CUALQUIER subdominio de trycloudflare.com
   ];
 
