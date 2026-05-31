@@ -9,6 +9,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   const config = app.get(ConfigService)
 
+  // Define allowedOrigins BEFORE using it in CORS configuration
+  const allowedOrigins = [
+    'http://localhost:5173',     // Desarrollo local
+    'http://localhost:3000',     // Mismo origen
+    /\.trycloudflare\.com$/,     // CUALQUIER subdominio de trycloudflare.com
+  ];
+
   app.use((cookieParser as any)())
 
   app.enableCors({
@@ -34,11 +41,6 @@ async function bootstrap() {
 
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  const allowedOrigins = [
-    'http://localhost:5173',     // Desarrollo local
-    'http://localhost:3000',     // Mismo origen
-    /\.trycloudflare\.com$/,     // CUALQUIER subdominio de trycloudflare.com
-  ];
   app.useGlobalFilters(new HttpExceptionFilter())
 
   // Render asigna el puerto via variable de entorno PORT
@@ -48,3 +50,4 @@ async function bootstrap() {
 }
 
 bootstrap()
+
