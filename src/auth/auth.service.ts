@@ -25,10 +25,24 @@ export class AuthService {
 
   // ── Validar credenciales (usado por LocalStrategy) ───────
   async validateUser(email: string, password: string): Promise<AuthUser | null> {
-    const user = await this.usersService.findByEmail(email.trim().toLowerCase())
+    console.log('=== LOGIN ===')
+    console.log('Email recibido:', email)
+
+    const user = await this.usersService.findByEmail(
+      email.trim().toLowerCase()
+    )
+
+    console.log('Usuario encontrado:', !!user)
+
     if (!user) return null
 
+    console.log('ID usuario:', user.id)
+    console.log('Hash BD:', user.passwordHash)
+
     const ok = await bcrypt.compare(password, user.passwordHash)
+
+    console.log('Password válida:', ok)
+
     if (!ok) return null
 
     return {
@@ -38,7 +52,6 @@ export class AuthService {
       esSuperadmin: user.esSuperadmin,
     }
   }
-
   // ── Login: genera tokens y devuelve user + empresas ─────
   async login(user: AuthUser) {
     await this.usersService.updateUltimoAcceso(user.id)
