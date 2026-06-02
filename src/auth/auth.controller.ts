@@ -48,6 +48,7 @@ export class AuthController {
         mensaje: "Inicio de sesión exitoso",
       }
     } catch (error) {
+      console.error('ERROR LOGIN:', error);
       // Capturar cualquier error y devolver respuesta consistente
       const mensaje = error instanceof ForbiddenException
         ? error.message

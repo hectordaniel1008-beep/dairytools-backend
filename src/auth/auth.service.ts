@@ -56,9 +56,14 @@ export class AuthService {
   async login(user: AuthUser) {
     await this.usersService.updateUltimoAcceso(user.id)
 
+    console.log('Usuario:', user.email);
+    console.log('Es superadmin:', user.esSuperadmin);
+
     const empresas = user.esSuperadmin
       ? await this.empresasService.getTodasEmpresas(user.id)
       : await this.empresasService.getEmpresasDeUsuario(user.id, null)
+
+    console.log('Empresas encontradas:', empresas.length);
 
     // Verificar que el usuario tenga al menos una empresa asignada
     if (!user.esSuperadmin && empresas.length === 0) {
