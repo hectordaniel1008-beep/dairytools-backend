@@ -19,10 +19,10 @@ CREATE TABLE IF NOT EXISTS empresas (
   rfc        VARCHAR(13)
 );
 
-INSERT INTO empresas (nombre, clave, color, estatus, rfc) VALUES
-  ('Rancho El Fresno',        'REF-001', '#1e5a96', true, 'AAA010101AAA' ),
-  ('Agropecuaria del Norte',  'ADN-002', '#2da44e', true, 'AAA010101AAA' ),
-  ('Ganadería La Esperanza',  'GLE-003', '#7c3aed', true, 'AAA010101AAA' )
+
+INSERT INTO empresas (id, nombre, clave, color, estatus, rfc) VALUES
+  (1,'Granja Eucaliptos',       'GEU-001', '#1e5a96', true, 'AAA010101AAA' ),
+  (2,'Agropecuaria del Norte',  'ADN-002', '#2da44e', true, 'AAA010101AAA' )
 ON CONFLICT (clave) DO NOTHING;
 
 -- ── Usuarios ─────────────────────────────────────────────────
@@ -39,15 +39,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 -- Contraseñas: admin123 / super123 / oper123 (bcrypt cost 12)
-INSERT INTO usuarios (nombre, email, password_hash, es_superadmin) VALUES
-  ('Administrador',  'admin@dairytools.com',
+INSERT INTO usuarios (id, nombre, email, password_hash, es_superadmin) VALUES
+  (1,'Administrador',  'admin@dairytools.com',
    '$2b$10$HQKK6W7jreKlJl2JLYdOXOjuqrKRPIU3l2TqNXgcaO1srkT8M0AC2',
    true),
-  ('María García',   'supervisor@dairytools.com',
-   '$2b$12$gUqSReNKVzBQdoGqnNS1M.7V3DvlNKDBMFlBhwW2oHiSomjDFdQ7q',
+  (2,'María García',   'supervisor@dairytools.com',
+   '$2b$10$75VrP8ZKuJ9RMDFsVHEWn.3N5.oexIfLSHei2rFtZiibw.oVwAZ/e',
    false),
-  ('Juan López',     'operador@dairytools.com',
-   '$2b$12$tW5BQpTH4X/RkXUk5ELqT.YQu0K7KKZ0o3J6sF9m3tMJQiXP2oFce',
+  (3,'Juan López',     'operador@dairytools.com',
+   '$2b$10$WRmLbp7VmdFKN40OdGwU5u7Swh0GGH22hbtxybhf7/hW1fWAM0ae.',
    false)
 ON CONFLICT (email) DO NOTHING;
 
@@ -64,8 +64,10 @@ CREATE TABLE IF NOT EXISTS usuario_empresa (
 
 -- Admin → las 3 empresas
 INSERT INTO usuario_empresa (usuario_id, empresa_id, rol) VALUES
-  (1,1,'admin'),(1,2,'admin'),(1,3,'admin'),
-  (2,1,'supervisor'),(2,2,'operador'),
+  (1,1,'admin'),
+  (1,2,'admin'),
+  (2,1,'supervisor'),
+  (2,2,'operador'),
   (3,1,'operador')
 ON CONFLICT DO NOTHING;
 
